@@ -64,19 +64,19 @@ def extract_modules(root):
                     break
 
             module_items = []
-###TO DO: CHECK LOOPS AND INDENTS FOR OVERWRITING (module issue)
+
         #extract items inside module (docs, assignments, pages, etc.)
-        for child in mod_elem:
-            if local_name(child.tag) == 'item':
-                item_title = 'Untitled Item'
-                for sub in child:
-                    if local_name(sub.tag) == 'title' and sub.text:
-                        item_title = sub.text
-                        break
+            for child in mod_elem:
+                if local_name(child.tag) == 'item':
+                    item_title = 'Untitled Item'
+                    for sub in child:
+                        if local_name(sub.tag) == 'title' and sub.text:
+                            item_title = sub.text
+                            break
 
-                ref = child.get('identifierref')  #Links resource dict's identifers/IDs to the XML's ID refs
+                    ref = child.get('identifierref')  #Links resource dict's identifers/IDs to the XML's ID refs
 
-                module_items.append({'title': item_title, 'ref': ref})
+                    module_items.append({'title': item_title, 'ref': ref})
 
             modules.append({'title': module_title, 'items': module_items})
 
