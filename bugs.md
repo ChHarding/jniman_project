@@ -7,3 +7,5 @@
 
 Fixed: Needed to indent loop correctly for extracting items in modules
 
+## Quizzes and discussion in separate XMLs
+- currently omitting these items for now
