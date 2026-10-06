@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Temporary extraction folders
+temp/
+course_backup/
+
+#Test files
+*.imscc
