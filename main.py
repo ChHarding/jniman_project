@@ -11,6 +11,14 @@ def extract_imscc(imscc_path, extract_dir):
         zip_ref.extractall(extract_dir) #creates temp folder if missing, for extraction
     print("Extraction complete!\n")
 
+##Cleanup block
+def cleanup_temp_dir(temp_dir):
+    """Removes the temporary extracted folder and files after process finishes."""
+    #check if path exists first to prevent error
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
+        print(f"Cleanup complete: removed temporary folder '{temp_dir}'. \n")
+
 ##Prep for parsing
 #Strip the XML's namespace prefix in {}s for clean matching
 def local_name(tag):
@@ -168,7 +176,7 @@ def build_module_folders(resource_dict, modules, extract_dir, output_dir):
 
     return copied_count
 
-#TODO: delete temp files once copying is complete.
+#TODOING: delete temp files once copying is complete.
 
 ##TEST block
 #TODO: replace hardcoded paths with Tkinter interaction so user can upload file
@@ -189,6 +197,9 @@ if __name__ == "__main__":
         resource_dict, modules, TMP_DIR, OUTPUT_DIR
     )
 
+    #Clean up temp extraction directory
+    cleanup_temp_dir(TMP_DIR)
+
     #print summary results
     print(f"Pass 1 complete: indexed {len(resource_dict)} file resources.\n")
     print(f"Pass 2 complete: extracted {len(modules)} course modules.\n")
@@ -207,5 +218,3 @@ if __name__ == "__main__":
         print("Sample module items:")
         for item in first_mod['items'][:5]:
             print(f" - title: {item['title']} | Ref key: {item['ref']}")
-
-#TODOING: offer user a summary log file for copied and skipped items (may not be able to handle quizzes and discussions)
