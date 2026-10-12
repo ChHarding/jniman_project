@@ -105,11 +105,14 @@ def clean_filename(name):
 
 #Build module folders and copy files
 def build_module_folders(resource_dict, modules, extract_dir, output_dir):
-    """Creates physical module folders and copies over the matching files."""
+    """Creates physical module folders, copies matching files, and writes summary log."""
     os.makedirs(output_dir, exist_ok=True) #check for top output folder
 
     copied_count = 0
-
+    non_file_items = (
+        []
+    ) #stores tuples of (module_title, item_title, reason_desc)
+    
     #Loop through each extracted module
     for mod_index, module in enumerate(modules, start=1):
         #Clean up title name
@@ -132,6 +135,36 @@ def build_module_folders(resource_dict, modules, extract_dir, output_dir):
                 if os.path.exists(src_file_path):
                     shutil.copy2(src_file_path, mod_folder_path)
                     copied_count += 1
+                else:
+                    #in the XML manifest but missing from extracted files
+                    non_file_items.append((module['title'], item['title']))
+            else:
+                #if the file doesn't exist
+                non_file_items.append((module['title'], item['title']))
+                                      
+    #Output summary log
+    report_path = os.path.join(output_dir, 'summary_log.txt')
+    # Open file in write mode ('w') with utf-8 encoding
+    with open(report_path, 'w', encoding='utf-8') as f:
+        f.write('Canvas Backup Summary Log\n')
+        f.write(f'Total Modules Extracted: {len(modules)}\n')
+        f.write(f'Total Files Copied: {copied_count}\n')
+        f.write(f'Total Non-File Items Logged: {len(non_file_items)}\n\n')
+        f.write('Missing Canvas items\n')
+
+        if non_file_items:
+            current_mod = ''
+            # Loop through logged items and print them under their module header
+            for mod_title, item_title, in non_file_items:
+                if mod_title != current_mod:
+                    f.write(f'\nModule: {mod_title}\n')
+                    current_mod = mod_title
+                f.write(f'  - {item_title}\n')
+        else:
+            f.write('All module items were raw files and successfully copied.\n')
+
+            # Return both the total copied file count and path to the log file
+        return copied_count, report_path
 
     return copied_count
 
@@ -151,13 +184,16 @@ if __name__ == "__main__":
     manifest_file = f"{TMP_DIR}/imsmanifest.xml"
     resource_dict, modules = parse_manifest(manifest_file)
 
-    #Build folders and copy files
-    copied = build_module_folders(resource_dict, modules, TMP_DIR, OUTPUT_DIR)
+    #Build folders, create summary log
+    copied, report_file = build_module_folders(
+        resource_dict, modules, TMP_DIR, OUTPUT_DIR
+    )
 
     #print summary results
     print(f"Pass 1 complete: indexed {len(resource_dict)} file resources.\n")
     print(f"Pass 2 complete: extracted {len(modules)} course modules.\n")
     print(f"{len(modules)} module folders created in '{OUTPUT_DIR}' with {copied} files copied.\n")
+    print(f"Sumary log written to 'report_file'.\n")
 
 #TODO: with Tkinter, display status and success/error messages
 
@@ -172,4 +208,4 @@ if __name__ == "__main__":
         for item in first_mod['items'][:5]:
             print(f" - title: {item['title']} | Ref key: {item['ref']}")
 
-#TODO: offer user a summary log file for copied and skipped items (may not be able to handle quizzes and discussions)
+#TODOING: offer user a summary log file for copied and skipped items (may not be able to handle quizzes and discussions)
