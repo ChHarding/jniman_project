@@ -1,6 +1,6 @@
 import os
 from tkinter import *
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askdirectory, askopenfilename
 
 class CanvasBackupApp(Tk):
     def __init__(self):
@@ -10,6 +10,7 @@ class CanvasBackupApp(Tk):
 
         #Tkinter state variables
         self.imscc_path_var = StringVar(value="No file selected")
+        self.output_dir_var = StringVar(value="No folder selected")
         self.status_var = StringVar(value="Ready")
 
         self.create_widgets()
@@ -37,7 +38,25 @@ class CanvasBackupApp(Tk):
         )
         lbl_file.grid(row=1, column=1, columnspan=2, padx=10, sticky="w")
 
-        #Status label (link to status_var)
+        #Row 2= Destination folder selector
+        btn_dir = Button(
+        self, text="Select output folder", font=font_bold, command=self.select_dir
+        )
+        btn_dir.grid(row=2, column=0, padx=15, pady=10, sticky="w")
+
+        lbl_dir = Label(
+            self,
+            textvariable=self.output_dir_var,
+            font=font_norm,
+            fg="blue",
+            anchor="w",
+            width=45,
+        )
+        lbl_dir.grid(row=2, column=1, padx=10, sticky="w")
+
+        ##TODO: Row 3 = run backup button
+
+        #Row 4 = Status label (link to status_var)
         lbl_status = Label(
             self,
             textvariable=self.status_var,
@@ -56,7 +75,16 @@ class CanvasBackupApp(Tk):
         )
         if filepath:
             self.imscc_path_var.set(filepath)
-            self.status_var.set("File selected. Next, select an output folder.")    
+            self.status_var.set("File selected. Next, select an output folder.")
+
+    #Folder dialog
+    def select_dir(self):
+        dirpath = askdirectory(title="Select destination folder")
+        if dirpath:
+            self.output_dir_var.set(dirpath)
+            self.status_var.set("Destination selected! Ready for backup.")
+
+    #TODO: def funct to validate inputs and invoke run_backup_process from main.py
 
 if __name__ == "__main__":
     app = CanvasBackupApp()
