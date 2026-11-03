@@ -174,47 +174,43 @@ def build_module_folders(resource_dict, modules, extract_dir, output_dir):
             # Return both the total copied file count and path to the log file
         return copied_count, report_path
 
-    return copied_count
-
-#TODOING: delete temp files once copying is complete.
-
-##TEST block
-#TODO: replace hardcoded paths with Tkinter interaction so user can upload file
-if __name__ == "__main__": 
-    IMSCC_FILE = "Canvas_Commons_Example.imscc"
-    TMP_DIR = "temp"
-    OUTPUT_DIR = "course_backup"
+##Run backup process
+def run_backup_process(imscc_path, output_dir, temp_dir="temp"):
+    """Main processing function to execute Canvas backup for incoming parameters to return dict containing processing metrics and report path"""
     
     #Extract IMSCC course export package
-    extract_imscc(IMSCC_FILE, TMP_DIR) #based on extract_imscc's positional arguments (imscc_path, extract_dir)
+    extract_imscc(imscc_path, temp_dir) 
     
     #Parse xml manifest
-    manifest_file = f"{TMP_DIR}/imsmanifest.xml"
+    manifest_file = os.path.join(temp_dir, "imsmanifest.xml")
     resource_dict, modules = parse_manifest(manifest_file)
 
     #Build folders, create summary log
     copied, report_file = build_module_folders(
-        resource_dict, modules, TMP_DIR, OUTPUT_DIR
+        resource_dict, modules, temp_dir, output_dir
     )
 
     #Clean up temp extraction directory
-    cleanup_temp_dir(TMP_DIR)
+    cleanup_temp_dir(temp_dir)
+
+    #Return output data
+    return {
+        "modules_count": len(modules),
+        "files_copied": copied,
+        "report_file": report_file,
+    }
+
+##CLI Test block
+if __name__ == "__main__":
+    test_file = "Canvas_Commons_Example.imscc"
+    test_output = "course_backup"
+
+    #pass test_file and test_output into funct parameters
+    results= run_backup_process(test_file, test_output)
 
     #print summary results
-    print(f"Pass 1 complete: indexed {len(resource_dict)} file resources.\n")
-    print(f"Pass 2 complete: extracted {len(modules)} course modules.\n")
-    print(f"{len(modules)} module folders created in '{OUTPUT_DIR}' with {copied} files copied.\n")
-    print(f"Sumary log written to 'report_file'.\n")
+    print(f"Extracted {results['modules_count']} modules.")
+    print(f"Copied {results['files_copied']} files.")
+    print(f"Summary log: {results['report_file']}")   
 
 #TODO: with Tkinter, display status and success/error messages
-
-    print("Sample resource mapping:")
-    for res_id, href in list(resource_dict.items())[:5]:
-        print(f" {res_id} -> {href}")
-    if modules:
-        first_mod = modules[0]
-        print(f"Module 1 title: '{first_mod['title']}'")
-        print(f"total items in M1: {len(first_mod['items'])}\n")
-        print("Sample module items:")
-        for item in first_mod['items'][:5]:
-            print(f" - title: {item['title']} | Ref key: {item['ref']}")
