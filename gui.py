@@ -153,7 +153,7 @@ class CanvasBackupApp(Tk):
         title_label = Label(
             self, text="Canvas Backup Tool", font=("Helvetica", 16, "bold")
         )
-        title_label.grid(row=0, column=0, columnspan=3, pady=(15, 15))
+        title_label.grid(row=0, column=0, columnspan=2, pady=(15, 15))
 
         #Row 1 = added file explorer to the grid
         self.explorer = FileExplorer(self, start_path=Path.cwd())
@@ -163,6 +163,9 @@ class CanvasBackupApp(Tk):
         #let treeview row stretch when window resizes
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
+
+        #attach selection
+        self.explorer.tree.bind("<<TreeviewSelect>>", self.on_tree_select)
 
         #Row 2 = file selector
         lbl_file_title = Label(self, text="Selected File:", font=font_bold)
@@ -212,66 +215,39 @@ class CanvasBackupApp(Tk):
         lbl_status.grid(row=5, column=1, padx=10, sticky="w")
 
     ##Callback
-    def select_file(self):
-        """Opens a file dialog for selecting the Canvas .imscc file"""
-        filepath = askopenfilename(
-        title="Select Canvas course export file",
-        filetypes=[("Canvas Course Export", "*.imscc"), ("All Files", "*.*")],
-        )
-        if filepath:
-            self.imscc_path_var.set(filepath)
-            self.status_var.set("File selected. Next, select an output folder.")
+    def on_tree_select(self, event):
+        """Detects clicked item in treeview and routes path to input or output."""
+        #find which item ID in tree was clicked
+        selected_items = self.explorer.tree.selection()
+        if not selected_items:
+            return
 
-    def select_dir(self):
-        """Opens a folder dialog for selecting destination directory"""
-        dirpath = askdirectory(title="Select destination folder")
-        if dirpath:
-            self.output_dir_var.set(dirpath)
-            self.status_var.set("Destination selected! Ready for backup.")
+        item_id = selected_items[0]
+        #looks up the path object from self.explorer.paths dict
+        path = self.explorer.paths.get(item_id)
+
+        if not path:
+            return
+
+        #Check 1: if user clicks a folder, update output_dir_var
+        if path.is_dir():
+            self.output_dir_var.set(str(path))
+            self.status_var.set("Folder selected. Next, select an .imscc file")
+
+        #check 2: if user clicks an .imscc file, update imscc_path_var
+        elif path.is_file() and path.suffix.lower() == ".imscc":
+            self.imscc_path_var.set(str(path))
+            self.status_var.set("File select. Run backup.")
+
+        #Check 3: if user clicks any other file time, notify in status bar
+        elif path.is_file():
+            self.status_var.set(
+                f"Note: '{path.name}' is not an .imscc file. Select a .imscc file or a"
+                " destination folder."
+            )
 
     def run_backup(self):
-        """Validates inputs and invokes run_backup_process funct from main.py"""
-        imscc_file = self.imscc_path_var.get()
-        output_folder =  self.output_dir_var.get()
-
-        #safety checks
-        if not os.path.exists(imscc_file) or imscc_file == "No file selected":
-            messagebox.showerror(
-                "Input Error", "Please select a valid .imscc course file."
-            )
-            return
-
-        if not output_folder or output_folder == "No folder selected":
-            messagebox.showerror(
-            "Input Error", "Please select an output destination folder."
-            )
-            return
-        
-        #update status and force visual refresh
-        self.status_var.set("Processing course backup... Please wait.")
-        self.update()
-
-        try:
-            #invoke backend funct from main.py
-            results = run_backup_process(imscc_file, output_folder)
-
-            #update status label
-            self.status_var.set(
-                f"Complete! Extracted {results['modules_count']} modules."
-            )
-
-            #Display completion popup box
-            messagebox.showinfo(
-                "Backup complete",
-                f"Canvas backup finished successfully!\n\n"
-                f"Extracted {results['modules_count']} modules.\n"
-                f"Copied {results['files_copied']} files.\n"
-                f"Summary log: {results['report_file']}",    
-            )
-
-        except Exception as e:
-            self.status_var.set("Error occured during extraction.")
-            messagebox.showerror("Extraction error", f"An error occured:\n{str(e)}")
+        pass       
 
 
 if __name__ == "__main__":
