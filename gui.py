@@ -14,6 +14,8 @@ class FileExplorer(ttk.Frame):
         # Maps Treeview item IDs to filesystem paths.
         self.paths = {}
 
+        #TODO: add 'new folder' method
+
         self.tree = ttk.Treeview(
             self,
             columns=("type", "size"),
@@ -44,6 +46,7 @@ class FileExplorer(ttk.Frame):
 
         # Use the current working directory unless another path is supplied.
         start_path = Path(start_path or Path.cwd()).resolve()
+        self.start_path = start_path #added for refresh() to find
 
         root_id = self._insert_path("", start_path)
         self.tree.item(root_id, open=True)
@@ -129,6 +132,17 @@ class FileExplorer(ttk.Frame):
 
         return f"{size:.1f} PB"
 
+    def refresh(self):
+      """Reloads the root directory to show newly created folders and files."""
+      #clear existing items
+      self.tree.delete(*self.tree.get_children())
+      self.paths.clear()
+
+      #reinsert the root path, load its contents
+      root_id = self._insert_path("", self.start_path)
+      self.tree.item(root_id, open=True)
+      self._load_children(root_id, self.start_path)
+
 class CanvasBackupApp(Tk):
     """Tkinter GUI app class"""
     def __init__(self):
@@ -138,8 +152,8 @@ class CanvasBackupApp(Tk):
         self.resizable(True, True)
 
         #Tkinter state variables
-        self.imscc_path_var = StringVar(value="No file selected")
-        self.output_dir_var = StringVar(value="No folder selected")
+        self.imscc_path_var = StringVar(value="Select an .imscc file")
+        self.output_dir_var = StringVar(value="Select a destination folder")
         self.status_var = StringVar(value="Ready")
 
         self.create_widgets()
@@ -215,6 +229,7 @@ class CanvasBackupApp(Tk):
         lbl_status.grid(row=5, column=1, padx=10, sticky="w")
 
     ##Callback
+    #TODO: for on_tree_select, add ability to browse parent folders
     def on_tree_select(self, event):
         """Detects clicked item in treeview and routes path to input or output."""
         #find which item ID in tree was clicked
@@ -247,7 +262,38 @@ class CanvasBackupApp(Tk):
             )
 
     def run_backup(self):
-        pass       
+        """Validates selections, rus backend extraction, refreshes tree view"""       
+        imscc_file = self.imscc_path_var.get()
+        output_folder = self.output_dir_var.get()
+
+        #Validation checks (through status label)
+        if not os.path.exists(imscc_file) or imscc_file == "Select an .imscc file":
+            self.status_var.set("Error: Please select a valid .imscc file.")
+            return
+
+        if not os.path.exists(output_folder) or output_folder == "Select a destination folder":
+            self.status_var.set("Error: Please select an output folder.")
+            return        
+
+        #Inform user status and update
+        self.status_var.set("Processing backup... Please wait.")
+        self.update()
+
+        #Execute backend processing
+        try:
+            results = run_backup_process(imscc_file, output_folder)
+
+            #refresh the treeview so the new folder and log appear
+            self.explorer.refresh()
+
+            #update inline status with summary info
+            self.status_var.set(
+                f"Complete! Extracted {results['modules_count']} modules. "
+                f"Open summary_log.txt to read details."
+            )
+
+        except Exception as e:
+            self.status_var.set(f"Extraction failed: {str(e)}")
 
 
 if __name__ == "__main__":

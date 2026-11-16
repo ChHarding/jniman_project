@@ -9,3 +9,7 @@ Fixed: Needed to indent loop correctly for extracting items in modules
 
 ## Quizzes and discussion in separate XMLs
 - currently omitting these items for now
+
+## GUI layout
+- Status label jumps when file path selected
+- status reports ready to run backup before output folder is selected
